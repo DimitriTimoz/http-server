@@ -1,2 +1,5 @@
 main
 /obj
+var/
+et/
+*.log
