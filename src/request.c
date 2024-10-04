@@ -1,13 +1,45 @@
 #include "server.h"
 
+// Function to decode URL-encoded strings
+char *url_decode(const char *src, char *dest, size_t dest_size) {
+    char *p = dest;
+    const char *end = dest + dest_size - 1;
+    while (*src && p < end) {
+        if (*src == '%') {
+            if (isxdigit((unsigned char)src[1]) && isxdigit((unsigned char)src[2])) {
+                char hex[3] = { src[1], src[2], '\0' };
+                *p++ = (char)strtol(hex, NULL, 16);
+                src += 3;
+            } else {
+                *p++ = '%';
+                src++;
+            }
+        } else if (*src == '+') {
+            *p++ = ' ';
+            src++;
+        } else {
+            *p++ = *src++;
+        }
+    }
+    *p = '\0';
+    return dest;
+}
+
+// Function to parse the HTTP request line and extract the method and path
 void parse_request(const char *buffer, char *method, size_t method_size, char *path, size_t path_size) {
+    snprintf(method, method_size, "");
+    snprintf(path, path_size, "");
     sscanf(buffer, "%15s %255s", method, path);
     if (strcmp(path, "/") == 0) {
-        strncpy(path, "/index.html", path_size - 1);
-        path[path_size - 1] = '\0';
+        snprintf(path, path_size, "/index.html");
+    } else {
+        char decoded_path[256];
+        url_decode(path, decoded_path, sizeof(decoded_path));
+        snprintf(path, path_size, "%s", decoded_path);
     }
 }
 
+// Function to determine the content type based on the file extension
 const char* get_content_type(const char *path) {
     const char *ext = strrchr(path, '.');
     if (ext) {
@@ -43,6 +75,7 @@ const char* get_content_type(const char *path) {
     return "application/octet-stream";
 }
 
+// Function to check if the requested path is within the server's root directory
 int is_safe_path(const char *base_path, const char *requested_path) {
     char real_base[512];
     char real_requested[512];

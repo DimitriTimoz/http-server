@@ -14,6 +14,9 @@
 #include <pthread.h>
 #include <time.h>
 #include <errno.h>
+#include <sys/select.h>
+#include <ctype.h>
+
 
 #define BUFSIZE 4096
 #define DEFAULT_PORT 8080
