@@ -77,7 +77,6 @@ void *handle_client(void *arg) {
         return NULL;
     }
     buffer[bytes_read] = '\0';
-    printf("Request received:\n%s\n", buffer);
 
     parse_request(buffer, method, sizeof(method), path, sizeof(path));
     printf("Method: %s, Path: %s\n", method, path);
