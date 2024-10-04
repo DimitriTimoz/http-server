@@ -1,5 +1,6 @@
 #include "server.h"
 
+// Function to load the server configuration from the configuration file
 void load_config() {
     FILE *config_file = fopen(CONFIG_FILE_1, "r");
     if (config_file == NULL) {
@@ -8,10 +9,18 @@ void load_config() {
     if (config_file) {
         char line[256];
         while (fgets(line, sizeof(line), config_file)) {
-            if (sscanf(line, "server_ip = %15s", server_ip) == 1) continue;
-            if (sscanf(line, "server_port = %d", &server_port) == 1) continue;
-            if (sscanf(line, "server_root = %255s", web_root) == 1) continue;
-            if (sscanf(line, "log_file = %255s", log_file_path) == 1) continue;
+            char key[256], value[256];
+            if (sscanf(line, " %255[^= ] = %255s", key, value) == 2) {
+                if (strcasecmp(key, "server_ip") == 0) {
+                    strncpy(server_ip, value, sizeof(server_ip) - 1);
+                } else if (strcasecmp(key, "server_port") == 0) {
+                    server_port = atoi(value);
+                } else if (strcasecmp(key, "server_root") == 0) {
+                    strncpy(web_root, value, sizeof(web_root) - 1);
+                } else if (strcasecmp(key, "log_file") == 0) {
+                    strncpy(log_file_path, value, sizeof(log_file_path) - 1);
+                }
+            }
         }
         fclose(config_file);
     }

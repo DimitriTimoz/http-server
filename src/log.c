@@ -13,6 +13,7 @@ void log_message(const char *message) {
     }
 }
 
+// Function to log access information
 void log_access(const char *client_ip, const char *method, const char *path, int status_code) {
     FILE *access_log_file = fopen(ACCESS_LOG_FILE, "a");
     if (access_log_file) {

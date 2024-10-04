@@ -1,5 +1,6 @@
 #include "server.h"
 
+// Function to send an HTTP response to the client
 void send_response(int socket_id, const char *header, const char *body) {
     if (write(socket_id, header, strlen(header)) == -1) {
         perror("Failed to send response header");
@@ -9,7 +10,9 @@ void send_response(int socket_id, const char *header, const char *body) {
     }
 }
 
+// Function to determine the content type based on the file extension and send the file as a response
 void send_file_response(int socket_id, const char *client_ip, const char *method, const char *path, const char *full_path) {
+    // Check if the requested path is safe
     if (!is_safe_path(web_root, full_path)) {
         log_message("Attempted file inclusion attack detected");
         send_response(socket_id, HTTP_403, NULL);
@@ -17,6 +20,7 @@ void send_file_response(int socket_id, const char *client_ip, const char *method
         return;
     }
 
+    // Open the file for reading
     int file_fd = open(full_path, O_RDONLY);
     if (file_fd < 0) {
         perror("open");
@@ -27,6 +31,7 @@ void send_file_response(int socket_id, const char *client_ip, const char *method
     }
 
     struct stat file_stat;
+    // Get the file stats to determine the content length
     if (fstat(file_fd, &file_stat) < 0) {
         perror("fstat");
         log_message("Failed to get file stats for response");
@@ -36,11 +41,13 @@ void send_file_response(int socket_id, const char *client_ip, const char *method
         return;
     }
 
+    // Get the content type based on the file extension
     const char *content_type = get_content_type(full_path);
     char response_header[BUFSIZE];
     snprintf(response_header, sizeof(response_header), "HTTP/1.0 200 OK\r\nContent-Type: %s; charset=UTF-8\r\nContent-Length: %lld\r\n\r\n", content_type, (long long)file_stat.st_size);
     send_response(socket_id, response_header, NULL);
 
+    // Read the file content and send it to the client
     char file_buffer[BUFSIZE];
     ssize_t bytes_read;
     while ((bytes_read = read(file_fd, file_buffer, BUFSIZE)) > 0) {
@@ -59,6 +66,7 @@ void send_file_response(int socket_id, const char *client_ip, const char *method
     log_access(client_ip, method, path, 200);
 }
 
+// Function to send a directory listing as an HTML response
 void send_directory_listing(int socket_id, const char *client_ip, const char *method, const char *path) {
     char response_body[BUFSIZE * 4];
     snprintf(response_body, sizeof(response_body), "<html><body><h1>Index of %s</h1><ul>", path);
@@ -66,6 +74,7 @@ void send_directory_listing(int socket_id, const char *client_ip, const char *me
     char full_path[512];
     snprintf(full_path, sizeof(full_path), "%s%s", web_root, path);
 
+    // Check if the requested path is safe
     if (!is_safe_path(web_root, full_path)) {
         log_message("Attempted directory traversal attack detected");
         send_response(socket_id, HTTP_403, NULL);
@@ -83,6 +92,7 @@ void send_directory_listing(int socket_id, const char *client_ip, const char *me
     }
 
     struct dirent *entry;
+    // Iterate over the directory entries and generate the HTML response
     while ((entry = readdir(dir)) != NULL) {
         if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
             strncat(response_body, "<li><a href=\"", sizeof(response_body) - strlen(response_body) - 1);
@@ -98,6 +108,7 @@ void send_directory_listing(int socket_id, const char *client_ip, const char *me
 
     strncat(response_body, "</ul></body></html>", sizeof(response_body) - strlen(response_body) - 1);
 
+    // Send the directory listing as an HTML response
     char response_header[BUFSIZE];
     snprintf(response_header, sizeof(response_header), "HTTP/1.0 200 OK\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Length: %ld\r\n\r\n", strlen(response_body));
     send_response(socket_id, response_header, response_body);
