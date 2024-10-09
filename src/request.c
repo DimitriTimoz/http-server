@@ -27,8 +27,8 @@ char *url_decode(const char *src, char *dest, size_t dest_size) {
 
 // Function to parse the HTTP request line and extract the method and path
 void parse_request(const char *buffer, char *method, size_t method_size, char *path, size_t path_size) {
-    snprintf(method, method_size, "");
-    snprintf(path, path_size, "");
+    method[0] = '\0';
+    path[0] = '\0';
     sscanf(buffer, "%15s %255s", method, path);
     if (strcmp(path, "/") == 0) {
         snprintf(path, path_size, "/index.html");

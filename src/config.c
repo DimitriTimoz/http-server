@@ -25,6 +25,10 @@ void load_config() {
         fclose(config_file);
     }
     char log[256];
-    snprintf(log, sizeof(log), "Configuration loaded: IP=%s, Port=%d, Root=%s", server_ip, server_port, web_root);
+    int ret = snprintf(log, sizeof(log), "Configuration loaded: IP=%s, Port=%d, Root=%s", server_ip, server_port, web_root);
+    if (ret >= sizeof(log)) {
+        // La chaîne a été tronquée
+        fprintf(stderr, "Log message truncated\n");
+    }
     log_message(log);
 }

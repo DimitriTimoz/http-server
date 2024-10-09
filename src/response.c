@@ -123,7 +123,10 @@ void handle_request(int socket_id, const char *client_ip, const char *method, co
 
     if (stat(full_path, &path_stat) == 0) {
         char log[512];
-        snprintf(log, sizeof(log), "Handling request for %s", full_path);
+        int ret = snprintf(log, sizeof(log), "Handling request for %s", full_path);
+        if (ret >= sizeof(log)) {
+            fprintf(stderr, "Log message truncated\n");
+        }
         log_message(log);
         if (S_ISDIR(path_stat.st_mode)) {
             send_directory_listing(socket_id, client_ip, method, path);
